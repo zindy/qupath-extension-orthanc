@@ -23,6 +23,8 @@ import com.example.qupath.orthanc.EnhancedOrthancImportDialog;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.Optional;
 
 /**
@@ -269,9 +271,10 @@ public class TestExtension implements QuPathExtension {
             // Sauvegarder le projet
             project.syncChanges();
             
-            // Ouvrir l'image
+            // Rafraîchir le panneau projet puis ouvrir l'image
             Platform.runLater(() -> {
                 try {
+                    qupath.refreshProject();
                     qupath.openImageEntry(entry);
                     autoAdjustDisplay(qupath);
                     showAlert("Import réussi",
@@ -296,8 +299,8 @@ public class TestExtension implements QuPathExtension {
     private void addSeriesToProject(QuPathGUI qupath, Project<BufferedImage> project, 
                                      EnhancedOrthancImportDialog.OrthancImportResult importResult) {
         
-        int totalImages = importResult.getDicomFiles().size();
-        
+        int totalImages = importResult.getInstanceIds().size();
+
         // Créer un dialog de progression
         Alert progressDialog = new Alert(AlertType.INFORMATION);
         progressDialog.setTitle("Import en cours");
@@ -329,32 +332,46 @@ public class TestExtension implements QuPathExtension {
         // Afficher le dialog sans bloquer
         progressDialog.show();
         
-        // Import en arrière-plan
+        // Import en arrière-plan : téléchargement ET ajout par instance
         new Thread(() -> {
             int successCount = 0;
-            
+
             try {
                 for (int i = 0; i < totalImages && !cancelled[0]; i++) {
-                    File dicomFile = importResult.getDicomFiles().get(i);
+                    String instanceId = importResult.getInstanceIds().get(i);
                     String imageName = importResult.getSeriesName() + "_" + (i + 1);
-                    
+
                     final int currentIndex = i + 1;
                     Platform.runLater(() -> {
-                        statusLabel.setText(String.format("Import de l'image %d sur %d...", currentIndex, totalImages));
+                        statusLabel.setText(String.format("Téléchargement %d/%d...", currentIndex, totalImages));
                         progressBar.setProgress((double) currentIndex / totalImages);
                     });
-                    
+
                     try {
-                        var uris = ImageServerProvider.getPreferredUriImageSupport(BufferedImage.class, dicomFile.getAbsolutePath());
-                        
+                        // Télécharger le PNG dans le thread de fond
+                        File tempFile = File.createTempFile("orthanc_series_" + i + "_", ".png");
+                        try (InputStream is = importResult.getClient().downloadInstanceRendered(instanceId);
+                             FileOutputStream fos = new FileOutputStream(tempFile)) {
+                            byte[] buffer = new byte[8192];
+                            int bytesRead;
+                            while ((bytesRead = is.read(buffer)) != -1) {
+                                fos.write(buffer, 0, bytesRead);
+                            }
+                        }
+
+                        // Ajouter au projet
+                        var uris = ImageServerProvider.getPreferredUriImageSupport(
+                            BufferedImage.class, tempFile.getAbsolutePath());
                         if (uris != null && !uris.getBuilders().isEmpty()) {
                             var builder = uris.getBuilders().get(0);
                             ProjectImageEntry<BufferedImage> entry = project.addImage(builder);
                             entry.setImageName(imageName);
                             successCount++;
+                        } else {
+                            System.err.println("Aucun serveur d'image pour : " + imageName);
                         }
                     } catch (Exception e) {
-                        System.err.println("Erreur lors de l'ajout de l'image " + imageName + ": " + e.getMessage());
+                        System.err.println("Erreur instance " + instanceId + " : " + e.getMessage());
                     }
                 }
                 
@@ -365,22 +382,25 @@ public class TestExtension implements QuPathExtension {
                 
                 Platform.runLater(() -> {
                     progressDialog.close();
-                    
+
+                    // Rafraîchir le panneau projet pour afficher toutes les images ajoutées
+                    qupath.refreshProject();
+
                     if (wasCancelled) {
-                        showAlert("Import annulé", 
+                        showAlert("Import annulé",
                             "Import annulé par l'utilisateur.\n\n" +
                             "Images importées : " + finalSuccessCount + "/" + totalImages + "\n" +
                             "Série : " + importResult.getSeriesName()
                         );
                     } else {
-                        showAlert("Import réussi", 
+                        showAlert("Import réussi",
                             "Série importée avec succès !\n\n" +
                             "Images ajoutées : " + finalSuccessCount + "/" + totalImages + "\n" +
                             "Série : " + importResult.getSeriesName() + "\n" +
                             "Projet : " + project.getName()
                         );
                     }
-                    
+
                     // Ouvrir la première image
                     if (finalSuccessCount > 0) {
                         try {

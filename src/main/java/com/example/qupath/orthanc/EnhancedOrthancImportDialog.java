@@ -343,34 +343,14 @@ public class EnhancedOrthancImportDialog extends Dialog<EnhancedOrthancImportDia
     }
     
     /**
-     * Importe toute une série
+     * Importe toute une série — retourne les IDs et le client, le téléchargement
+     * se fait dans le thread de fond d'addSeriesToProject()
      */
-    private OrthancImportResult importWholeSeries(OrthancClient.OrthancSeries series) throws Exception {
-        List<File> files = new ArrayList<>();
-        
-        for (int i = 0; i < series.getInstanceIds().size(); i++) {
-            String instanceId = series.getInstanceIds().get(i);
-
-            File tempFile = File.createTempFile("orthanc_series_" + i + "_", ".png");
-
-            try (InputStream is = client.downloadInstanceRendered(instanceId);
-                 FileOutputStream fos = new FileOutputStream(tempFile)) {
-
-                byte[] buffer = new byte[8192];
-                int bytesRead;
-                while ((bytesRead = is.read(buffer)) != -1) {
-                    fos.write(buffer, 0, bytesRead);
-                }
-            }
-
-            files.add(tempFile);
-        }
-        
-        String seriesName = series.getSeriesDescription().isEmpty() 
-            ? "orthanc_series_" + series.getId() 
+    private OrthancImportResult importWholeSeries(OrthancClient.OrthancSeries series) {
+        String seriesName = series.getSeriesDescription().isEmpty()
+            ? "orthanc_series_" + series.getId()
             : series.getSeriesDescription();
-        
-        return new OrthancImportResult(files, seriesName, true);
+        return new OrthancImportResult(series.getInstanceIds(), client, seriesName);
     }
     
     /**
@@ -389,26 +369,34 @@ public class EnhancedOrthancImportDialog extends Dialog<EnhancedOrthancImportDia
      * Classe pour retourner le résultat de l'import
      */
     public static class OrthancImportResult {
-        private final List<File> dicomFiles;
+        private final List<File> dicomFiles;       // pour instance unique
+        private final List<String> instanceIds;    // pour série
+        private final OrthancClient client;        // pour série
         private final String seriesName;
         private final boolean isWholeSeries;
-        
+
+        // Constructeur pour instance unique
         public OrthancImportResult(List<File> dicomFiles, String seriesName, boolean isWholeSeries) {
             this.dicomFiles = dicomFiles;
+            this.instanceIds = null;
+            this.client = null;
             this.seriesName = seriesName;
             this.isWholeSeries = isWholeSeries;
         }
-        
-        public List<File> getDicomFiles() {
-            return dicomFiles;
+
+        // Constructeur pour série (pas de pré-téléchargement)
+        public OrthancImportResult(List<String> instanceIds, OrthancClient client, String seriesName) {
+            this.dicomFiles = null;
+            this.instanceIds = instanceIds;
+            this.client = client;
+            this.seriesName = seriesName;
+            this.isWholeSeries = true;
         }
-        
-        public String getSeriesName() {
-            return seriesName;
-        }
-        
-        public boolean isWholeSeries() {
-            return isWholeSeries;
-        }
+
+        public List<File> getDicomFiles()    { return dicomFiles; }
+        public List<String> getInstanceIds() { return instanceIds; }
+        public OrthancClient getClient()     { return client; }
+        public String getSeriesName()        { return seriesName; }
+        public boolean isWholeSeries()       { return isWholeSeries; }
     }
 }
