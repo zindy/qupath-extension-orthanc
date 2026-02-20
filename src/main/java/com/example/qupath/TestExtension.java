@@ -10,6 +10,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import qupath.lib.gui.QuPathGUI;
@@ -116,7 +117,14 @@ public class TestExtension implements QuPathExtension {
                     boolean createProject = askToCreateProject(importResult.isWholeSeries());
                     
                     if (createProject) {
-                        project = createNewProject(qupath, "Orthanc_Project");
+                        TextInputDialog nameDialog = new TextInputDialog("Orthanc_Project");
+                        nameDialog.setTitle("Nouveau projet");
+                        nameDialog.setHeaderText("Entrez un nom pour le nouveau projet");
+                        nameDialog.setContentText("Nom du projet :");
+                        Optional<String> nameResult = nameDialog.showAndWait();
+                        if (nameResult.isEmpty()) return;
+                        String projectName = nameResult.get().trim().isEmpty() ? "Orthanc_Project" : nameResult.get().trim();
+                        project = createNewProject(qupath, projectName);
                         if (project == null) {
                             showAlert("Erreur", "Impossible de créer un projet");
                             return;
