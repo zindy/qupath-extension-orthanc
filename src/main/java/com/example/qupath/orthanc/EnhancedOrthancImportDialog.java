@@ -257,7 +257,7 @@ public class EnhancedOrthancImportDialog extends Dialog<EnhancedOrthancImportDia
                 List<OrthancClient.OrthancSeries> seriesList = new ArrayList<>();
                 for (String seriesId : study.getSeriesIds()) {
                     OrthancClient.OrthancSeries series = client.getSeriesDetails(seriesId);
-                    if (series != null) {
+                    if (series != null && "SM".equals(series.getModality())) {
                         seriesList.add(series);
                     }
                 }
@@ -324,21 +324,23 @@ public class EnhancedOrthancImportDialog extends Dialog<EnhancedOrthancImportDia
      * Importe une seule instance
      */
     private OrthancImportResult importSingleInstance(String instanceId, String seriesDesc) throws Exception {
-        File tempFile = File.createTempFile("orthanc_", ".dcm");
-        
+        // Télécharger le fichier DICOM brut et le retourner directement
+        // (QuPath's ImageServerProvider gère les fichiers .dcm nativement)
+        File dcmFile = File.createTempFile("orthanc_", ".dcm");
+
         try (InputStream is = client.downloadInstance(instanceId);
-             FileOutputStream fos = new FileOutputStream(tempFile)) {
-            
+             FileOutputStream fos = new FileOutputStream(dcmFile)) {
+
             byte[] buffer = new byte[8192];
             int bytesRead;
             while ((bytesRead = is.read(buffer)) != -1) {
                 fos.write(buffer, 0, bytesRead);
             }
         }
-        
+
         List<File> files = new ArrayList<>();
-        files.add(tempFile);
-        
+        files.add(dcmFile);
+
         return new OrthancImportResult(files, "orthanc_" + instanceId, false);
     }
     
