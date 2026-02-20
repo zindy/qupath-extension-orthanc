@@ -152,11 +152,26 @@ public class TestExtension implements QuPathExtension {
             try {
                 var viewer = qupath.getViewer();
                 qupath.openImage(viewer, imageFile.getAbsolutePath(), true, true);
+                autoAdjustDisplay(qupath);
             } catch (Exception e) {
                 showAlert("Erreur", "Erreur lors de l'ouverture de l'image:\n" + e.getMessage());
                 e.printStackTrace();
             }
         });
+    }
+
+    /**
+     * Ajuste automatiquement la plage d'affichage de tous les canaux du viewer
+     */
+    private void autoAdjustDisplay(QuPathGUI qupath) {
+        var viewer = qupath.getViewer();
+        if (viewer == null) return;
+        var imageDisplay = viewer.getImageDisplay();
+        if (imageDisplay == null) return;
+        for (var channel : imageDisplay.availableChannels()) {
+            imageDisplay.autoSetDisplayRange(channel);
+        }
+        viewer.repaint();
     }
     
     /**
@@ -258,7 +273,8 @@ public class TestExtension implements QuPathExtension {
             Platform.runLater(() -> {
                 try {
                     qupath.openImageEntry(entry);
-                    showAlert("Import réussi", 
+                    autoAdjustDisplay(qupath);
+                    showAlert("Import réussi",
                         "Image DICOM importée et ajoutée au projet !\n\n" +
                         "Nom: " + imageName + "\n" +
                         "Projet: " + project.getName()

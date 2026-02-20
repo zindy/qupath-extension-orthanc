@@ -321,15 +321,13 @@ public class EnhancedOrthancImportDialog extends Dialog<EnhancedOrthancImportDia
     }
     
     /**
-     * Importe une seule instance
+     * Importe une seule instance via l'endpoint /rendered d'Orthanc (PNG décodé par Orthanc)
      */
     private OrthancImportResult importSingleInstance(String instanceId, String seriesDesc) throws Exception {
-        // Télécharger le fichier DICOM brut et le retourner directement
-        // (QuPath's ImageServerProvider gère les fichiers .dcm nativement)
-        File dcmFile = File.createTempFile("orthanc_", ".dcm");
+        File pngFile = File.createTempFile("orthanc_", ".png");
 
-        try (InputStream is = client.downloadInstance(instanceId);
-             FileOutputStream fos = new FileOutputStream(dcmFile)) {
+        try (InputStream is = client.downloadInstanceRendered(instanceId);
+             FileOutputStream fos = new FileOutputStream(pngFile)) {
 
             byte[] buffer = new byte[8192];
             int bytesRead;
@@ -339,7 +337,7 @@ public class EnhancedOrthancImportDialog extends Dialog<EnhancedOrthancImportDia
         }
 
         List<File> files = new ArrayList<>();
-        files.add(dcmFile);
+        files.add(pngFile);
 
         return new OrthancImportResult(files, "orthanc_" + instanceId, false);
     }
@@ -352,19 +350,19 @@ public class EnhancedOrthancImportDialog extends Dialog<EnhancedOrthancImportDia
         
         for (int i = 0; i < series.getInstanceIds().size(); i++) {
             String instanceId = series.getInstanceIds().get(i);
-            
-            File tempFile = File.createTempFile("orthanc_series_" + i + "_", ".dcm");
-            
-            try (InputStream is = client.downloadInstance(instanceId);
+
+            File tempFile = File.createTempFile("orthanc_series_" + i + "_", ".png");
+
+            try (InputStream is = client.downloadInstanceRendered(instanceId);
                  FileOutputStream fos = new FileOutputStream(tempFile)) {
-                
+
                 byte[] buffer = new byte[8192];
                 int bytesRead;
                 while ((bytesRead = is.read(buffer)) != -1) {
                     fos.write(buffer, 0, bytesRead);
                 }
             }
-            
+
             files.add(tempFile);
         }
         

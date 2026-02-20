@@ -221,7 +221,30 @@ public class OrthancClient {
         
         return response.body().byteStream();
     }
-    
+
+    /**
+     * Télécharge une image PNG pré-rendue depuis Orthanc (décode le DICOM côté serveur)
+     */
+    public InputStream downloadInstanceRendered(String instanceId) throws IOException {
+        Request.Builder requestBuilder = new Request.Builder()
+            .url(baseUrl + "/instances/" + instanceId + "/rendered")
+            .get();
+
+        if (credentials != null) {
+            requestBuilder.header("Authorization", credentials);
+        }
+
+        Request request = requestBuilder.build();
+        Response response = httpClient.newCall(request).execute();
+
+        if (!response.isSuccessful()) {
+            response.close();
+            throw new IOException("Erreur lors du rendu de l'instance: " + response.code());
+        }
+
+        return response.body().byteStream();
+    }
+
     /**
      * Classe représentant une étude Orthanc
      */
