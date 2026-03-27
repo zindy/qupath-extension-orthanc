@@ -13,9 +13,11 @@
 
 ### Overview
 
-**qupath-extension-orthanc** is a [QuPath](https://qupath.github.io/) extension that lets you browse and import DICOM images directly from an [Orthanc](https://www.orthanc-server.com/) server into QuPath — no local download required for whole-slide series.
+**qupath-extension-orthanc** is a [QuPath](https://qupath.github.io/) extension that lets you browse and import DICOM images directly from an [Orthanc](https://www.orthanc-server.com/) server into QuPath.
 
-It supports both single-instance imports (rendered as PNG) and full WSI (Whole Slide Image) pyramidal series streamed tile-by-tile on demand via the [Orthanc WSI plugin](https://orthanc.uclouvain.be/book/plugins/wsi.html).
+It supports two import modes:
+- **Single instance** — the instance is rendered and downloaded as a temporary PNG file, then opened in QuPath.
+- **Full WSI series** — tiles are streamed on demand via the [Orthanc WSI plugin](https://orthanc.uclouvain.be/book/plugins/wsi.html); no full download is required.
 
 The interface language is automatically set to match your system locale (English and French supported).
 
@@ -137,9 +139,11 @@ Copyright (C) 2026 D4rkL4s3r
 
 ### Présentation
 
-**qupath-extension-orthanc** est une extension [QuPath](https://qupath.github.io/) permettant de parcourir et d'importer des images DICOM directement depuis un serveur [Orthanc](https://www.orthanc-server.com/) — sans téléchargement local pour les séries entières.
+**qupath-extension-orthanc** est une extension [QuPath](https://qupath.github.io/) permettant de parcourir et d'importer des images DICOM directement depuis un serveur [Orthanc](https://www.orthanc-server.com/).
 
-Elle supporte l'import d'instances uniques (rendues en PNG) ainsi que l'import de séries WSI (Whole Slide Image) pyramidales, dont les tuiles sont récupérées à la demande via le [plugin Orthanc WSI](https://orthanc.uclouvain.be/book/plugins/wsi.html).
+Elle supporte deux modes d'import :
+- **Instance unique** — l'instance est rendue et téléchargée dans un fichier PNG temporaire, puis ouverte dans QuPath.
+- **Série WSI complète** — les tuiles sont récupérées à la demande via le [plugin Orthanc WSI](https://orthanc.uclouvain.be/book/plugins/wsi.html) ; aucun téléchargement intégral n'est nécessaire.
 
 La langue de l'interface est automatiquement adaptée à la locale du système (anglais et français supportés).
 
