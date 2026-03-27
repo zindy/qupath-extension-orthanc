@@ -65,7 +65,7 @@ The interface language is automatically set to match your system locale (English
 #### Option 2 — Build from source
 
 ```bash
-git clone https://github.com/<your-username>/qupath-extension-orthanc.git
+git clone https://github.com/D4rkL4s3r44/qupath-extension-orthanc.git
 cd qupath-extension-orthanc
 ./gradlew clean build
 ```
@@ -189,7 +189,7 @@ La langue de l'interface est automatiquement adaptée à la locale du système (
 #### Option 2 — Compiler depuis les sources
 
 ```bash
-git clone https://github.com/<your-username>/qupath-extension-orthanc.git
+git clone https://github.com/D4rkL4s3r44/qupath-extension-orthanc.git
 cd qupath-extension-orthanc
 ./gradlew clean build
 ```
