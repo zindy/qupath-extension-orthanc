@@ -26,139 +26,103 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 
 /**
- * Extension QuPath avec import DICOM simplifié depuis Orthanc
+ * QuPath extension for importing DICOM images from Orthanc.
  */
 public class TestExtension implements QuPathExtension {
-    
+
     @Override
     public void installExtension(QuPathGUI qupath) {
-        // Enregistrer OrthancImageServerBuilder dans le ServiceLoader de QuPath
-        // (nécessaire car les extensions sont chargées après l'initialisation du ServiceLoader)
+        // Register OrthancImageServerBuilder in QuPath's ServiceLoader
         ImageServerProvider.setServiceLoader(
                 ServiceLoader.load(ImageServerBuilder.class, OrthancImageServerBuilder.class.getClassLoader()));
 
-        // Créer un menu principal
-        Menu menu = new Menu("Extension Orthanc");
-        
-        // Menu item principal : Importer depuis Orthanc
-        MenuItem importFromOrthanc = new MenuItem("Importer une image DICOM...");
-        importFromOrthanc.setOnAction(e -> {
-            importDicomFromOrthanc(qupath);
-        });
-        
-        // Menu item : Informations de l'image courante
-        MenuItem imageInfo = new MenuItem("Informations de l'image");
+        Menu menu = new Menu(Messages.get("menu.name"));
+
+        // Import item
+        MenuItem importFromOrthanc = new MenuItem(Messages.get("menu.import"));
+        importFromOrthanc.setOnAction(e -> importDicomFromOrthanc(qupath));
+
+        // Image info item
+        MenuItem imageInfo = new MenuItem(Messages.get("menu.imageInfo"));
         imageInfo.setOnAction(e -> {
             ImageData<?> imageData = qupath.getImageData();
             if (imageData == null) {
-                showAlert("Aucune image ouverte", "Veuillez ouvrir une image d'abord.");
+                showAlert(Messages.get("info.noImage"), Messages.get("info.noImageContent"));
                 return;
             }
-            
+
             StringBuilder info = new StringBuilder();
-            info.append("Nom: ").append(imageData.getServer().getMetadata().getName()).append("\n");
-            info.append("Largeur: ").append(imageData.getServer().getWidth()).append(" px\n");
-            info.append("Hauteur: ").append(imageData.getServer().getHeight()).append(" px\n");
-            info.append("Canaux: ").append(imageData.getServer().nChannels()).append("\n");
-            
-            // Info sur le projet
+            info.append(Messages.get("info.name")).append(" ").append(imageData.getServer().getMetadata().getName()).append("\n");
+            info.append(Messages.get("info.width")).append(" ").append(imageData.getServer().getWidth()).append(Messages.get("info.widthUnit"));
+            info.append(Messages.get("info.height")).append(" ").append(imageData.getServer().getHeight()).append(Messages.get("info.heightUnit"));
+            info.append(Messages.get("info.channels")).append(" ").append(imageData.getServer().nChannels());
+
             Project<?> project = qupath.getProject();
             if (project != null) {
-                info.append("\nProjet: ").append(project.getName()).append("\n");
-                info.append("Nombre d'images: ").append(project.getImageList().size());
+                info.append(Messages.get("info.project")).append(" ").append(project.getName());
+                info.append(Messages.get("info.projectCount")).append(" ").append(project.getImageList().size());
             } else {
-                info.append("\nAucun projet ouvert");
+                info.append(Messages.get("info.noProject"));
             }
-            
-            showAlert("Informations", info.toString());
+
+            showAlert(Messages.get("info.title"), info.toString());
         });
-        
-        // Menu item : À propos
-        MenuItem about = new MenuItem("À propos");
-        about.setOnAction(e -> {
-            showAlert("À propos", 
-                "Extension QuPath - Import DICOM Orthanc v0.3.1\n\n" +
-                "Fonctionnalités:\n" +
-                "• Navigation complète dans Orthanc\n" +
-                "• Import d'une instance unique\n" +
-                "• Import de séries complètes\n" +
-                "• Barre de progression avec annulation\n" +
-                "• Création automatique de projet\n" +
-                "• Gestion intelligente des images multiples\n\n" +
-                "Utilisation:\n" +
-                "1. Cliquez sur 'Importer depuis Orthanc'\n" +
-                "2. Connectez-vous à votre serveur Orthanc\n" +
-                "3. Naviguez et sélectionnez votre image/série\n" +
-                "4. Importez !"
-            );
-        });
-        
-        // Ajouter tous les items au menu
+
+        // About item
+        MenuItem about = new MenuItem(Messages.get("menu.about"));
+        about.setOnAction(e -> showAlert(Messages.get("about.title"), Messages.get("about.content")));
+
         menu.getItems().addAll(importFromOrthanc, imageInfo, about);
-        
-        // Ajouter le menu à la barre de menu de QuPath
         qupath.getMenuBar().getMenus().add(menu);
-        
-        System.out.println("Extension Orthanc v0.3.1 installée avec succès !");
     }
-    
-    /**
-     * Ouvre le dialog d'import DICOM depuis Orthanc
-     */
+
     private void importDicomFromOrthanc(QuPathGUI qupath) {
         EnhancedOrthancImportDialog dialog = new EnhancedOrthancImportDialog();
         Optional<EnhancedOrthancImportDialog.OrthancImportResult> result = dialog.showAndWait();
-        
+
         result.ifPresent(importResult -> {
             try {
-                // Vérifier s'il y a un projet ouvert
                 Project<BufferedImage> project = qupath.getProject();
-                
+
                 if (project == null) {
-                    // Pas de projet ouvert - en créer un
                     boolean createProject = askToCreateProject(importResult.isWholeSeries());
-                    
+
                     if (createProject) {
                         TextInputDialog nameDialog = new TextInputDialog("Orthanc_Project");
-                        nameDialog.setTitle("Nouveau projet");
-                        nameDialog.setHeaderText("Entrez un nom pour le nouveau projet");
-                        nameDialog.setContentText("Nom du projet :");
+                        nameDialog.setTitle(Messages.get("project.nameTitle"));
+                        nameDialog.setHeaderText(Messages.get("project.nameHeader"));
+                        nameDialog.setContentText(Messages.get("project.nameLabel"));
                         Optional<String> nameResult = nameDialog.showAndWait();
                         if (nameResult.isEmpty()) return;
                         String projectName = nameResult.get().trim().isEmpty() ? "Orthanc_Project" : nameResult.get().trim();
                         project = createNewProject(qupath, projectName);
                         if (project == null) {
-                            showAlert("Erreur", "Impossible de créer un projet");
+                            showAlert(Messages.get("error.title"), Messages.get("error.createProject"));
                             return;
                         }
                     } else if (importResult.isWholeSeries()) {
-                        showAlert("Erreur", "Un projet est requis pour importer une série complète");
+                        showAlert(Messages.get("error.title"), Messages.get("project.required"));
                         return;
                     } else {
-                        // Ouvrir juste la première image sans projet
                         openImageSimple(qupath, importResult.getDicomFiles().get(0));
-                        showAlert("Import réussi", "Image DICOM ouverte avec succès !");
+                        showAlert(Messages.get("import.success"), Messages.get("import.openSuccess"));
                         return;
                     }
                 }
-                
-                // Ajouter les images au projet
+
                 if (importResult.isWholeSeries()) {
                     addSeriesToProject(qupath, project, importResult);
                 } else {
                     addImageToProject(qupath, project, importResult.getDicomFiles().get(0), importResult.getSeriesName());
                 }
-                
+
             } catch (Exception e) {
-                showAlert("Erreur", "Erreur lors de l'import:\n" + e.getMessage());
+                showAlert(Messages.get("error.title"), Messages.get("error.import") + e.getMessage());
                 e.printStackTrace();
             }
         });
     }
-    
-    /**
-     * Ouvre une image sans projet
-     */
+
     private void openImageSimple(QuPathGUI qupath, File imageFile) {
         Platform.runLater(() -> {
             try {
@@ -166,15 +130,12 @@ public class TestExtension implements QuPathExtension {
                 qupath.openImage(viewer, imageFile.getAbsolutePath(), true, true);
                 autoAdjustDisplay(qupath);
             } catch (Exception e) {
-                showAlert("Erreur", "Erreur lors de l'ouverture de l'image:\n" + e.getMessage());
+                showAlert(Messages.get("error.title"), Messages.get("error.openImage") + e.getMessage());
                 e.printStackTrace();
             }
         });
     }
 
-    /**
-     * Ajuste automatiquement la plage d'affichage de tous les canaux du viewer
-     */
     private void autoAdjustDisplay(QuPathGUI qupath) {
         var viewer = qupath.getViewer();
         if (viewer == null) return;
@@ -185,128 +146,89 @@ public class TestExtension implements QuPathExtension {
         }
         viewer.repaint();
     }
-    
-    /**
-     * Demande à l'utilisateur s'il veut créer un projet
-     */
+
     private boolean askToCreateProject(boolean isWholeSeries) {
         Alert alert = new Alert(AlertType.CONFIRMATION);
-        alert.setTitle("Aucun projet ouvert");
-        
+        alert.setTitle(Messages.get("project.askTitle"));
+
         if (isWholeSeries) {
-            alert.setHeaderText("Un projet est requis pour importer une série");
-            alert.setContentText(
-                "L'import de série complète nécessite un projet QuPath.\n\n" +
-                "Voulez-vous créer un nouveau projet ?"
-            );
+            alert.setHeaderText(Messages.get("project.askHeaderSeries"));
+            alert.setContentText(Messages.get("project.askContentSeries"));
         } else {
-            alert.setHeaderText("Voulez-vous créer un nouveau projet ?");
-            alert.setContentText(
-                "Aucun projet n'est actuellement ouvert.\n\n" +
-                "• OUI : Créer un nouveau projet et y ajouter l'image\n" +
-                "• NON : Ouvrir l'image sans projet"
-            );
+            alert.setHeaderText(Messages.get("project.askHeader"));
+            alert.setContentText(Messages.get("project.askContent"));
         }
-        
-        ButtonType buttonYes = new ButtonType("Oui");
-        ButtonType buttonNo = new ButtonType("Non");
-        
+
+        ButtonType buttonYes = new ButtonType(Messages.get("project.yes"));
+        ButtonType buttonNo  = new ButtonType(Messages.get("project.no"));
         alert.getButtonTypes().setAll(buttonYes, buttonNo);
-        
+
         Optional<ButtonType> response = alert.showAndWait();
         return response.isPresent() && response.get() == buttonYes;
     }
-    
-    /**
-     * Crée un nouveau projet QuPath
-     */
+
     private Project<BufferedImage> createNewProject(QuPathGUI qupath, String projectName) {
         try {
-            // Utiliser DirectoryChooser pour sélectionner un dossier
             DirectoryChooser dirChooser = new DirectoryChooser();
-            dirChooser.setTitle("Choisir le dossier du projet");
+            dirChooser.setTitle(Messages.get("project.nameTitle"));
             File projectDir = dirChooser.showDialog(qupath.getStage());
-            
-            if (projectDir == null) {
-                return null;
-            }
-            
-            // Créer le dossier du projet
+
+            if (projectDir == null) return null;
+
             File projectFile = new File(projectDir, projectName);
-            if (!projectFile.exists()) {
-                projectFile.mkdirs();
-            }
-            
-            // Créer le fichier project.qpproj
+            if (!projectFile.exists()) projectFile.mkdirs();
+
             File qpprojFile = new File(projectFile, "project.qpproj");
-            
-            // Créer et ouvrir le projet
             Project<BufferedImage> project = Projects.createProject(qpprojFile, BufferedImage.class);
             qupath.setProject(project);
-            
-            showAlert("Projet créé", "Nouveau projet créé : " + projectName);
-            
+
+            showAlert(Messages.get("project.created"), Messages.get("project.createdContent") + " " + projectName);
             return project;
-            
+
         } catch (Exception e) {
             e.printStackTrace();
-            showAlert("Erreur", "Erreur lors de la création du projet:\n" + e.getMessage());
+            showAlert(Messages.get("error.title"), Messages.get("error.createProject") + ":\n" + e.getMessage());
             return null;
         }
     }
-    
-    /**
-     * Ajoute une image au projet et l'ouvre
-     */
+
     private void addImageToProject(QuPathGUI qupath, Project<BufferedImage> project, File dicomFile, String imageName) {
         try {
-            // Créer un ServerBuilder pour l'image
             var uris = ImageServerProvider.getPreferredUriImageSupport(BufferedImage.class, dicomFile.getAbsolutePath());
-            
+
             if (uris == null || uris.getBuilders().isEmpty()) {
-                showAlert("Erreur", "Aucun serveur d'image disponible pour ce fichier DICOM");
+                showAlert(Messages.get("error.title"), Messages.get("error.noServer"));
                 return;
             }
-            
+
             var builder = uris.getBuilders().get(0);
-            
-            // Ajouter l'image au projet
             ProjectImageEntry<BufferedImage> entry = project.addImage(builder);
-            
-            // Définir le nom de l'image
+
             if (imageName != null && !imageName.isEmpty()) {
                 entry.setImageName(imageName);
             }
-            
-            // Sauvegarder le projet
+
             project.syncChanges();
-            
-            // Rafraîchir le panneau projet puis ouvrir l'image
+
             Platform.runLater(() -> {
                 try {
                     qupath.refreshProject();
                     qupath.openImageEntry(entry);
                     autoAdjustDisplay(qupath);
-                    showAlert("Import réussi",
-                        "Image DICOM importée et ajoutée au projet !\n\n" +
-                        "Nom: " + imageName + "\n" +
-                        "Projet: " + project.getName()
-                    );
+                    showAlert(Messages.get("import.success"),
+                        Messages.get("import.successContent") + " " + imageName +
+                        Messages.get("import.successProject") + " " + project.getName());
                 } catch (Exception e) {
-                    showAlert("Erreur", "Image ajoutée au projet mais erreur à l'ouverture:\n" + e.getMessage());
+                    showAlert(Messages.get("error.title"), Messages.get("error.addToProject") + e.getMessage());
                 }
             });
-            
+
         } catch (Exception e) {
             e.printStackTrace();
-            showAlert("Erreur", "Erreur lors de l'ajout de l'image au projet:\n" + e.getMessage());
+            showAlert(Messages.get("error.title"), Messages.get("error.addToProject") + e.getMessage());
         }
     }
-    
-    /**
-     * Ajoute une série WSI au projet en utilisant OrthancImageServer.
-     * Aucun téléchargement : les tuiles sont récupérées à la demande depuis Orthanc.
-     */
+
     private void addSeriesToProject(QuPathGUI qupath, Project<BufferedImage> project,
                                      EnhancedOrthancImportDialog.OrthancImportResult importResult) {
         new Thread(() -> {
@@ -325,26 +247,21 @@ public class TestExtension implements QuPathExtension {
                     try {
                         qupath.openImageEntry(entry);
                     } catch (Exception e) {
-                        System.err.println("Erreur ouverture image : " + e.getMessage());
+                        System.err.println("Error opening image: " + e.getMessage());
                     }
-                    showAlert("Import réussi",
-                            "Série importée avec succès !\n\n" +
-                            "Série : " + importResult.getSeriesName() + "\n" +
-                            "Projet : " + project.getName()
-                    );
+                    showAlert(Messages.get("import.successSeries"),
+                        Messages.get("import.successSeriesContent") + " " + importResult.getSeriesName() +
+                        Messages.get("import.successSeriesProject") + " " + project.getName());
                 });
 
             } catch (Exception e) {
                 e.printStackTrace();
                 Platform.runLater(() ->
-                        showAlert("Erreur", "Erreur lors de l'import de la série :\n" + e.getMessage()));
+                    showAlert(Messages.get("error.title"), Messages.get("error.import") + e.getMessage()));
             }
         }).start();
     }
-    
-    /**
-     * Méthode utilitaire pour afficher une boîte de dialogue
-     */
+
     private void showAlert(String title, String content) {
         Alert alert = new Alert(AlertType.INFORMATION);
         alert.setTitle(title);
@@ -352,14 +269,14 @@ public class TestExtension implements QuPathExtension {
         alert.setContentText(content);
         alert.showAndWait();
     }
-    
+
     @Override
     public String getName() {
         return "Extension Orthanc Import";
     }
-    
+
     @Override
     public String getDescription() {
-        return "Import complet d'images DICOM depuis Orthanc avec support des séries complètes";
+        return "Full DICOM image import from Orthanc with WSI pyramidal series support";
     }
 }
