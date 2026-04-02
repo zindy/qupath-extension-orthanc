@@ -38,8 +38,8 @@ The interface language is automatically set to match your system locale (English
 
 | Dependency | Version |
 |---|---|
-| [QuPath](https://qupath.github.io/) | >= 0.5.0 |
-| Java | >= 17 |
+| [QuPath](https://qupath.github.io/) | >= 0.7.0 |
+| Java | >= 25 |
 | Orthanc server | any recent version |
 | [Orthanc WSI plugin](https://orthanc.uclouvain.be/book/plugins/wsi.html) | required for pyramidal series import |
 

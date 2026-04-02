@@ -1,1 +1,1 @@
-com.example.qupath.TestExtension
+qupath.ext.orthanc.OrthancExtension
