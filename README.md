@@ -54,9 +54,9 @@ The interface language is automatically set to match your system locale (English
 1. Download `qupath-extension-orthanc-1.0.jar` from the [Releases](../../releases) page.
 
 2. Locate your QuPath extensions folder:
-   - **Windows:** `C:\Users\<you>\AppData\Local\QuPath\v0.5\extensions\`
-   - **macOS:** `~/Library/Application Support/QuPath/v0.5/extensions/`
-   - **Linux:** `~/.local/share/QuPath/v0.5/extensions/`
+   - **Windows:** `C:\Users\<you>\AppData\Local\QuPath\v0.7\extensions\`
+   - **macOS:** `~/Library/Application Support/QuPath/v0.7/extensions/`
+   - **Linux:** `~/.local/share/QuPath/v0.7/extensions/`
 
    > You can find this path in QuPath under **Edit > Preferences > Extensions directory**.
 
@@ -69,7 +69,7 @@ The interface language is automatically set to match your system locale (English
 ```bash
 git clone https://github.com/D4rkL4s3r44/qupath-extension-orthanc.git
 cd qupath-extension-orthanc
-./gradlew clean build
+./gradlew clean shadowJar
 ```
 
 The JAR is generated at:
@@ -79,7 +79,7 @@ build/libs/qupath-extension-orthanc-1.0.jar
 
 Copy it to your QuPath extensions folder (see Option 1, step 2).
 
-> On Windows, use `gradlew.bat clean build` instead.
+> On Windows, use `gradlew.bat clean shadowJar` instead.
 
 ---
 
@@ -164,8 +164,8 @@ La langue de l'interface est automatiquement adaptée à la locale du système (
 
 | Dépendance | Version |
 |---|---|
-| [QuPath](https://qupath.github.io/) | >= 0.5.0 |
-| Java | >= 17 |
+| [QuPath](https://qupath.github.io/) | >= 0.7.0 |
+| Java | >= 25 |
 | Serveur Orthanc | toute version récente |
 | [Plugin Orthanc WSI](https://orthanc.uclouvain.be/book/plugins/wsi.html) | requis pour l'import de séries pyramidales |
 
@@ -180,9 +180,9 @@ La langue de l'interface est automatiquement adaptée à la locale du système (
 1. Téléchargez `qupath-extension-orthanc-1.0.jar` depuis la page [Releases](../../releases).
 
 2. Localisez le dossier d'extensions de QuPath :
-   - **Windows :** `C:\Users\<votre-nom>\AppData\Local\QuPath\v0.5\extensions\`
-   - **macOS :** `~/Library/Application Support/QuPath/v0.5/extensions/`
-   - **Linux :** `~/.local/share/QuPath/v0.5/extensions/`
+   - **Windows :** `C:\Users\<votre-nom>\AppData\Local\QuPath\v0.7\extensions\`
+   - **macOS :** `~/Library/Application Support/QuPath/v0.7/extensions/`
+   - **Linux :** `~/.local/share/QuPath/v0.7/extensions/`
 
    > Ce chemin est accessible depuis QuPath via **Edit > Preferences > Extensions directory**.
 
@@ -195,7 +195,7 @@ La langue de l'interface est automatiquement adaptée à la locale du système (
 ```bash
 git clone https://github.com/D4rkL4s3r44/qupath-extension-orthanc.git
 cd qupath-extension-orthanc
-./gradlew clean build
+./gradlew clean shadowJar
 ```
 
 Le JAR est généré dans :
@@ -205,7 +205,7 @@ build/libs/qupath-extension-orthanc-1.0.jar
 
 Copiez-le dans le dossier d'extensions de QuPath (voir Option 1, étape 2).
 
-> Sous Windows, utilisez `gradlew.bat clean build`.
+> Sous Windows, utilisez `gradlew.bat clean shadowJar`.
 
 ---
 
@@ -255,4 +255,6 @@ src/main/java/com/example/qupath/
 
 ### Licence
 
-Ce projet est distribué sous la licence [MIT](LICENSE).
+Ce projet est distribué sous la licence [GNU General Public License v3.0](LICENSE).
+
+Copyright (C) 2026 D4rkL4s3r
